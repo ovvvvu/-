@@ -23,24 +23,16 @@ jobs:
           git zip unzip openjdk-17-jdk \
           python3-pip autoconf libtool \
           pkg-config zlib1g-dev \
-          libncurses5-dev libncursesw6-dev libtinfo6 \
+          libncurses5-dev libtinfo6 \
           cmake libffi-dev libssl-dev automake
     
     - name: Install Buildozer
       run: |
         pip install buildozer cython
     
-    - name: Check files before build
-      run: |
-        echo "=== Current directory ==="
-        ls -la
-        echo "=== buildozer.spec head ==="
-        head -20 buildozer.spec
-    
     - name: Build APK
       run: |
         buildozer android debug 2>&1 | tee build.log
-        echo "=== Build finished ==="
         ls -la bin/ 2>/dev/null || echo "No bin directory"
     
     - name: Upload APK
