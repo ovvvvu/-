@@ -1,62 +1,94 @@
 name: Build Android APK
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     
-    - uses: actions/setup-python@v5
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: '3.8'
     
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          git zip unzip openjdk-17-jdk \
-          python3-pip autoconf libtool \
-          pkg-config zlib1g-dev \
-          libncurses5-dev libtinfo6 \
-          cmake libffi-dev libssl-dev automake
+        sudo dpkg --add-architecture i386
+        sudo apt-get update -qq
+        sudo apt-get install -qq --no-install-recommends 
+          python3-pip 
+          python3-setuptools 
+          build-essential 
+          libffi-dev 
+          libssl-dev 
+          libltdl-dev 
+          libtool 
+          autoconf 
+          automake 
+          pkg-config 
+          zlib1g-dev 
+          libncurses5-dev 
+          libncursesw5-dev 
+          libtinfo5 
+          cmake 
+          git 
+          ffmpeg 
+          libsdl2-dev 
+          libsdl2-image-dev 
+          libsdl2-mixer-dev 
+          libsdl2-ttf-dev 
+          libportmidi-dev 
+          libswscale-dev 
+          libavformat-dev 
+          libavcodec-dev 
+          libfreetype6-dev 
+          libgl1-mesa-dev 
+          libgles2-mesa-dev 
+          openjdk-13-jdk 
+          unzip 
+          zip 
+          zlib1g:i386 
+          libstdc++6:i386 
+          libgcc1:i386 
+          libncurses5:i386 
+          libz1:i386
     
-    - name: Install Buildozer
+    - name: Install Python dependencies
       run: |
-        pip install buildozer cython
-    
-    - name: Setup Android SDK
-      run: |
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip -q commandlinetools-linux-11076708_latest.zip
-        mv cmdline-tools latest
-        export PATH=$PATH:~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
-        yes | sdkmanager --licenses || true
-        sdkmanager "build-tools;33.0.0" "platforms;android-33" "platform-tools"
+        pip install --upgrade pip
+        pip install Cython==0.29.33
+        pip install kivy==2.1.0
+        pip install buildozer==1.5.0
     
     - name: Build APK
       run: |
-        export PATH=$PATH:~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
-        export ANDROIDSDK=~/.buildozer/android/platform/android-sdk
-        buildozer android debug 2>&1 | tee build.log
-    
-    - name: Find APK
-      run: |
-        find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
-        ls -la bin/ 2>/dev/null || true
+        # 创建 buildozer.spec 如果还没有
+        if [ ! -f buildozer.spec ]; then
+          buildozer init
+          # 修改配置
+          sed -i 's/^title = .*/title = MyApp/' buildozer.spec
+          sed -i 's/^package.name = .*/package.name = myapp/' buildozer.spec
+          sed -i 's/^package.domain = .*/package.domain = org.example/' buildozer.spec
+          sed -i 's/^source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas,ttf,txt,md/' buildozer.spec
+          sed -i 's/^version = .*/version = 0.1/' buildozer.spec
+          sed -i 's/^requirements = .*/requirements = python3,kivy==2.1.0/' buildozer.spec
+          sed -i 's/^# android.sdk = .*/android.sdk = 33/' buildozer.spec
+          sed -i 's/^# android.ndk = .*/android.ndk = 25b/' buildozer.spec
+          sed -i 's/^# android.api = .*/android.api = 33/' buildozer.spec
+          sed -i 's/^# android.minapi = .*/android.minapi = 21/' buildozer.spec
+          sed -i 's/^# android.archs = .*/android.archs = arm64-v8a, armeabi-v7a/' buildozer.spec
+        fi
+        
+        # 开始构建
+        buildozer -v android debug
     
     - name: Upload APK
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
+      if: always()
       with:
-        name: dual-timer-apk
-        path: |
-          bin/*.apk
-          dist/*.apk
+        name: android-apk
+        path: bin/*.apk
         if-no-files-found: warn
