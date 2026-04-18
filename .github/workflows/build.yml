@@ -30,14 +30,33 @@ jobs:
       run: |
         pip install buildozer cython
     
+    - name: Setup Android SDK
+      run: |
+        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        cd ~/.buildozer/android/platform/android-sdk/cmdline-tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip
+        mv cmdline-tools latest
+        export PATH=$PATH:~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
+        yes | sdkmanager --licenses || true
+        sdkmanager "build-tools;33.0.0" "platforms;android-33" "platform-tools"
+    
     - name: Build APK
       run: |
+        export PATH=$PATH:~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
+        export ANDROIDSDK=~/.buildozer/android/platform/android-sdk
         buildozer android debug 2>&1 | tee build.log
-        ls -la bin/ 2>/dev/null || echo "No bin directory"
+    
+    - name: Find APK
+      run: |
+        find . -name "*.apk" -type f 2>/dev/null || echo "No APK found"
+        ls -la bin/ 2>/dev/null || true
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: dual-timer-apk
-        path: bin/*.apk
+        path: |
+          bin/*.apk
+          dist/*.apk
         if-no-files-found: warn
