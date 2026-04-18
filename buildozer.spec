@@ -3,7 +3,7 @@
 title = 双倒计时器
 # 包名
 package.name = dualtimer
-# 包域名
+# 包域名 
 package.domain = org.example
 # 源码目录
 source.dir = .
