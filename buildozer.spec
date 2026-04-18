@@ -22,7 +22,7 @@ fullscreen = 0
 # Android API
 android.api = 33
 # Android NDK
-android.ndk = 25b
+android.ndk = 23b
 # 最小 SDK
 android.minapi = 21
 # 目标 SDK
